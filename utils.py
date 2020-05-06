@@ -2,14 +2,16 @@ import os
 import re
 import tempfile
 import random
-
+import subprocess
+import ffmpy
+import json
 
 def get_dimensions(input_file):
     """
     Parse a video's resolution (1024x720) and return width + height
     """
     deets = get_video_details(input_file)
-    dimensions = deets['video']['resolution'].split('x')
+    dimensions = deets['width'],deets['height']
     width = int(dimensions[0])
     height = int(dimensions[1])
     return width, height
@@ -20,13 +22,11 @@ def get_total_seconds(input_file):
     Parse a video's duration (00:00:00) and convert to total seconds
     """
     deets = get_video_details(input_file)
-    duration = deets['duration'].split(':')
-    hours = float(duration[0])
-    minutes = float(duration[1])
-    seconds = float(duration[2])
-    seconds += minutes * 60
-    seconds += hours * 60 * 60
-    return seconds
+    
+    duration = deets['duration']
+    print(duration)
+
+    return float(duration)
 
 
 def make_random_value(val_range):
@@ -43,27 +43,15 @@ def line_break(num):
 
 
 def get_video_details(input_file):
-    tmpf = tempfile.NamedTemporaryFile()
-    os.system('ffmpeg -i {} 2> {}'.format(input_file, tmpf.name))
-    lines = tmpf.readlines()
-    tmpf.close()
-    metadata = {}
-    for l in lines:
-        l = l.strip()
-        if l.startswith('Duration'):
-            metadata['duration'] = re.search('Duration: (.*?),', l).group(0).split(':',1)[1].strip(' ,')
-            metadata['bitrate'] = re.search("bitrate: (\d+ kb/s)", l).group(0).split(':')[1].strip()
-        if l.startswith('Stream #0:0'):
-            metadata['video'] = {}
-            metadata['video']['codec'], metadata['video']['profile'] = \
-                [e.strip(' ,()') for e in re.search('Video: (.*? \(.*?\)),? ', l).group(0).split(':')[1].split('(')]
-            metadata['video']['resolution'] = re.search('([1-9]\d+x\d+)', l).group(1)
-            metadata['video']['bitrate'] = re.search('(\d+ kb/s)', l).group(1)
-            metadata['video']['fps'] = re.search('(\d+ fps)', l).group(1)
-        if l.startswith('Stream #0:1'):
-            metadata['audio'] = {}
-            metadata['audio']['codec'] = re.search('Audio: (.*?) ', l).group(1)
-            metadata['audio']['frequency'] = re.search(', (.*? Hz),', l).group(1)
-            metadata['audio']['bitrate'] = re.search(', (\d+ kb/s)', l).group(1)
+    
+    tup_resp = ffmpy.FFprobe(
+    inputs={input_file: None},
+    global_options=[
+            '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_format', '-show_streams']
+    ).run(stdout=subprocess.PIPE)
 
-    return metadata
+    meta = json.loads(tup_resp[0].decode('utf-8'))
+    
+    return meta['streams'][0]

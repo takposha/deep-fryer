@@ -22,7 +22,7 @@ def create_base_args():
 def increase_audio(input_audio, amt):
     output_args = ['-y', '-af', 'volume=3, bass=g=5, treble=g=-10']
     audio_file = None
-    for idx in xrange(0, amt):
+    for idx in range(0, amt):
         input_file = audio_file or input_audio
         output = '{}/tmp_audio_{}.wav'.format(TMP_FOLDER, idx)
         ff = ffmpy.FFmpeg(inputs={input_file: None}, outputs={output: output_args})
@@ -78,7 +78,7 @@ def get_random_emoji():
     Return a random emoji file from './emoji'. To avoid errors when using the
     same file more than once, each file is given a random name and copied into './tmp'
     """
-    emoji_choices = filter(lambda x: not x.startswith('.'), os.listdir('./emoji'))
+    emoji_choices = list(filter(lambda x: not x.startswith('.'), os.listdir('./emoji')))
     rand_choice = random.choice(emoji_choices)
     new_name = str(random.randint(0, 99999999)) + '.png'
     new_dest = '{}/{}'.format(TMP_FOLDER, new_name)
@@ -97,7 +97,7 @@ def get_random_emojis(amt):
     }
     """
     emojis = OrderedDict({})
-    for idx in xrange(1, amt + 1):
+    for idx in range(1, amt + 1):
         size = random.randint(50, 200)
         rotation = random.randint(-180, 180)
 
@@ -215,7 +215,7 @@ def deep_fry_video(input_file, video_dip):
 
     output_args = create_base_args() + create_filter_args()
 
-    for idx in xrange(0, video_dip):
+    for idx in range(0, video_dip):
         output = '{}/deep_fried_{}.mp4'.format(TMP_FOLDER, idx)
         outputs = create_outputs(output, output_args)
 
